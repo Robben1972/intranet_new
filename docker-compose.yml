@@ -3,27 +3,54 @@ version: '3.8'
 services:
   core:
     build: .
-    container_name: core_app
+    container_name: core-app
     ports:
       - "9411:9411"
     environment:
-      - ENV_VAR_NAME=value  
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=0200
+      - POSTGRES_DB=Intranet
+      - POSTGRES_HOST=db
+      - DJANGO_SUPERUSER_USERNAME=ItranetAdmin
+      - DJANGO_SUPERUSER_PASSWORD=367367367$Intra
+      - DJANGO_SUPERUSER_EMAIL=admin@example.com
     volumes:
-      - .:/app 
+      - ./:/Core
     depends_on:
-      - db 
-
+      - db
+    image: core-app:last
+    restart: always
+    command: >
+      sh -c "python manage.py makemigrations &&
+             python manage.py migrate &&
+             python manage.py createsuperuser --noinput &&
+             python manage.py runserver 0.0.0.0:8020"
   db:
     image: postgres:16
     container_name: core_db
     environment:
-      POSTGRES_USER: posgres
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 0200
       POSTGRES_DB: Intranet
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    restart: always
+
+  uzcard-intranet-web:
+    image: core-app:last
+    container_name: uzcard-intranet-web-1
+    ports:
+      - "8020:8020"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=0200
+      - POSTGRES_DB=Intranet
+      - POSTGRES_HOST=db
+    depends_on:
+      - db
+    restart: always
 
 volumes:
   pgdata:
