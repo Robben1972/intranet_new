@@ -41,3 +41,6 @@ class News(models.Model):
     department_en = models.CharField(max_length=200, blank=True, choices=Selection.DepartmentsEN.choices)
     image = models.CharField(max_length=200)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title_uz or self.title_en or self.title_ru or "No Title"

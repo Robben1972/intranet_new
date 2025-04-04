@@ -1,0 +1,3 @@
+sudo docker build -t intranet .
+
+docker run -p 8000:8000 intranet

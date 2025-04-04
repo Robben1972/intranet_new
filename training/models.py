@@ -76,4 +76,6 @@ class TrainingModel(models.Model):
     attachments = models.CharField(max_length=255, blank=True)
     archived = models.BooleanField(default=False)
 
+    def __str__(self):
+        return self.title_uz or self.title_ru or self.title_en 
 
