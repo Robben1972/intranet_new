@@ -9,6 +9,18 @@ from django.conf import settings
 from django.http import Http404
 from .serializers import TrainingSerializerEN, TrainingSerializerRU, TrainingSerializerUZ
 from .models import TrainingModel
+from django.core.exceptions import ValidationError
+import os
+
+
+def validate_image_format(image):
+    valid_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp']
+    ext = os.path.splitext(image.name)[1].lower()
+    if ext not in valid_extensions:
+        raise ValidationError(f"Unsupported image format. Allowed formats are: {', '.join(valid_extensions)}.")
+    limit = 10 * 1024 * 1024  # 10 MiB
+    if image.size > limit:
+        raise ValidationError("File too large. Size should not exceed 10 MiB.")
 
 class TrainingListViewEN(APIView):
     parser_classes = [MultiPartParser, FormParser]
@@ -47,31 +59,31 @@ class TrainingListViewEN(APIView):
         image = request.FILES.get('image')
         if not image:
             return Response({'error': 'Image is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            validate_image_format(image)
+        except ValidationError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         fileapp_url = f"{settings.FILEAPP_URL}/"
         fileapp_response = requests.post(fileapp_url, files={'file': image}, data={'service': 'training'})
         if fileapp_response.status_code != 201:
             return Response({'error': 'Failed to upload image.'}, status=status.HTTP_400_BAD_REQUEST)
         image_path = fileapp_response.json().get('file_path')
-
         data = request.data.copy()
         data['image'] = image_path
-
         video = request.FILES.get('video')
         if video:
             fileapp_response = requests.post(fileapp_url, files={'file': video}, data={'service': 'training'})
             if fileapp_response.status_code != 201:
                 return Response({'error': 'Failed to upload video.'}, status=status.HTTP_400_BAD_REQUEST)
             data['video'] = fileapp_response.json().get('file_path')
-
-        # Handle attachments upload if present
         attachments = request.FILES.get('attachments')
         if attachments:
             fileapp_response = requests.post(fileapp_url, files={'file': attachments}, data={'service': 'training'})
             if fileapp_response.status_code != 201:
                 return Response({'error': 'Failed to upload attachments.'}, status=status.HTTP_400_BAD_REQUEST)
             data['attachments'] = fileapp_response.json().get('file_path')
-
         serializer = TrainingSerializerEN(data=data)
         if serializer.is_valid():
             serializer.save()
@@ -129,6 +141,10 @@ class TrainingDetailViewEN(APIView):
 
         image = request.FILES.get('image')
         if image:
+            try:
+                validate_image_format(image)
+            except ValidationError as e:
+                return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
             fileapp_response = requests.post(fileapp_url, files={'file': image}, data={'service': 'training'})
             if fileapp_response.status_code != 201:
                 return Response({'error': 'Failed to upload image.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -207,6 +223,11 @@ class TrainingListViewRU(APIView):
         image = request.FILES.get('image')
         if not image:
             return Response({'error': 'Image is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            validate_image_format(image)
+        except ValidationError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         fileapp_url = f"{settings.FILEAPP_URL}/"
         fileapp_response = requests.post(fileapp_url, files={'file': image}, data={'service': 'training'})
@@ -288,6 +309,10 @@ class TrainingDetailViewRU(APIView):
 
         image = request.FILES.get('image')
         if image:
+            try:
+                validate_image_format(image)
+            except ValidationError as e:
+                return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
             fileapp_response = requests.post(fileapp_url, files={'file': image}, data={'service': 'training'})
             if fileapp_response.status_code != 201:
                 return Response({'error': 'Failed to upload image.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -363,6 +388,10 @@ class TrainingListViewUZ(APIView):
         image = request.FILES.get('image')
         if not image:
             return Response({'error': 'Image is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            validate_image_format(image)
+        except ValidationError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         fileapp_url = f"{settings.FILEAPP_URL}/"
         fileapp_response = requests.post(fileapp_url, files={'file': image}, data={'service': 'training'})
@@ -444,6 +473,10 @@ class TrainingDetailViewUZ(APIView):
 
         image = request.FILES.get('image')
         if image:
+            try:
+                validate_image_format(image)
+            except ValidationError as e:
+                return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
             fileapp_response = requests.post(fileapp_url, files={'file': image}, data={'service': 'training'})
             if fileapp_response.status_code != 201:
                 return Response({'error': 'Failed to upload image.'}, status=status.HTTP_400_BAD_REQUEST)

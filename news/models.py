@@ -1,3 +1,4 @@
+import os
 from django.db import models
 from ckeditor_uploader.fields import RichTextUploadingField
 
@@ -39,8 +40,8 @@ class News(models.Model):
     department_uz = models.CharField(max_length=200, blank=True, choices=Selection.DepartmentsUZ.choices)
     department_ru = models.CharField(max_length=200, blank=True, choices=Selection.DepartmentsRU.choices)
     department_en = models.CharField(max_length=200, blank=True, choices=Selection.DepartmentsEN.choices)
-    image = models.CharField(max_length=200)
+    image = models.CharField(max_length=200, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.title_uz or self.title_en or self.title_ru or "No Title"
+        return next((title for title in [self.title_uz, self.title_ru, self.title_en] if title), "No Title")

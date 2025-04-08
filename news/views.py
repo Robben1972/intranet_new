@@ -9,6 +9,19 @@ from django.conf import settings
 
 from .serializers import NewsSerializerEN, NewsSerializerRU, NewsSerializerUZ
 from .models import News
+from django.core.exceptions import ValidationError
+import os
+
+
+def validate_image_format(image):
+    valid_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp']
+    ext = os.path.splitext(image.name)[1].lower()
+    if ext not in valid_extensions:
+        raise ValidationError(f"Unsupported image format. Allowed formats are: {', '.join(valid_extensions)}.")
+    limit = 10 * 1024 * 1024  # 10 MiB
+    if image.size > limit:
+        raise ValidationError("File too large. Size should not exceed 10 MiB.")
+
 
 class NewsListViewUZ(APIView):
     parser_classes = [MultiPartParser, FormParser]
@@ -52,22 +65,22 @@ class NewsListViewUZ(APIView):
         image = request.FILES.get('image')
         if not image:
             return Response({'error': 'Image is required.'}, status=status.HTTP_400_BAD_REQUEST)
-
+        try:
+            validate_image_format(image)
+        except ValidationError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         fileapp_url = f"{settings.FILEAPP_URL}/"
         fileapp_response = requests.post(fileapp_url, files={'file': image}, data={'service': 'news'})
-
         if fileapp_response.status_code != 201:
             return Response({'error': 'Failed to upload image.'}, status=status.HTTP_400_BAD_REQUEST)
-
         image_path = fileapp_response.json().get('file_path')
-
         data = request.data.copy()
-        data['image'] = image_path
+        data['image'] = image_path 
         serializer = NewsSerializerUZ(data=data)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=201)
-        return Response(serializer.errors, status=400)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class NewsListViewRU(APIView):
@@ -112,23 +125,22 @@ class NewsListViewRU(APIView):
         image = request.FILES.get('image')
         if not image:
             return Response({'error': 'Image is required.'}, status=status.HTTP_400_BAD_REQUEST)
-
+        try:
+            validate_image_format(image)
+        except ValidationError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         fileapp_url = f"{settings.FILEAPP_URL}/"
         fileapp_response = requests.post(fileapp_url, files={'file': image}, data={'service': 'news'})
-
         if fileapp_response.status_code != 201:
             return Response({'error': 'Failed to upload image.'}, status=status.HTTP_400_BAD_REQUEST)
-
         image_path = fileapp_response.json().get('file_path')
-
-        # Save news entry
         data = request.data.copy()
-        data['image'] = image_path
-        serializer = NewsSerializerRU(data=data)
+        data['image'] = image_path 
+        serializer = NewsSerializerUZ(data=data)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=201)
-        return Response(serializer.errors, status=400)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class NewsListViewEN(APIView):
@@ -173,23 +185,22 @@ class NewsListViewEN(APIView):
         image = request.FILES.get('image')
         if not image:
             return Response({'error': 'Image is required.'}, status=status.HTTP_400_BAD_REQUEST)
-
+        try:
+            validate_image_format(image)
+        except ValidationError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         fileapp_url = f"{settings.FILEAPP_URL}/"
         fileapp_response = requests.post(fileapp_url, files={'file': image}, data={'service': 'news'})
-
         if fileapp_response.status_code != 201:
             return Response({'error': 'Failed to upload image.'}, status=status.HTTP_400_BAD_REQUEST)
-
         image_path = fileapp_response.json().get('file_path')
-
-        # Save news entry
         data = request.data.copy()
-        data['image'] = image_path
-        serializer = NewsSerializerEN(data=data)
+        data['image'] = image_path 
+        serializer = NewsSerializerUZ(data=data)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=201)
-        return Response(serializer.errors, status=400)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
 
